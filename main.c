@@ -5,22 +5,24 @@
 #include<stdio.h>
 #include <math.h>
 
-const int  SIZE = 1000; 
+const size_t  SIZE = 1000; 
 #define TIMES  10000
+
+uint64_t global=0;
 
 static inline uint64_t read_time(void) {
     unsigned int aux;
     return __rdtscp(&aux);
 }
 
-static inline void uint64_t_move(uint64_t* input,uint64_t* output, int size){
+static inline void uint64_t_move(uint64_t* input,uint64_t* output, size_t size){
     memcpy(output, input, size * sizeof(uint64_t));
 }   
 
 #define macro_move(INPUT,OUTPUT,MYSIZE) memcpy(OUTPUT, INPUT, MYSIZE * sizeof(uint64_t))
 
-static inline void movsq_copy(uint64_t* input,uint64_t* output, int size){
-	 __asm__ (
+static inline void movsq_copy(uint64_t* input,uint64_t* output, size_t size){
+     __asm__ (
         "rep movsq"
 
         :
@@ -29,7 +31,7 @@ static inline void movsq_copy(uint64_t* input,uint64_t* output, int size){
     );
 }
 
-static inline void four_copy_ymm(uint64_t* input, uint64_t* output, int size) {
+static inline void four_copy_ymm(uint64_t* input, uint64_t* output, size_t size) {
     int loop_count = size / 4;  // Perform the division outside of the assembly
     __asm__ volatile (
         "1:\n"
@@ -49,6 +51,11 @@ static inline void four_copy_ymm(uint64_t* input, uint64_t* output, int size) {
 }
 
 
+/*
+for !!!SOME REASON!!! removing the commented out code raises 
+"Illegal instruction (core dumped)"
+same goes for uncomenting it
+*/
 #define CHECK_FUNC(func) \
     output = malloc(SIZE*sizeof(uint64_t));\
     // if (posix_memalign((void**)&output, 32, SIZE * sizeof(uint64_t)) != 0) { \
