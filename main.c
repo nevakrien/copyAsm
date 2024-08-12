@@ -5,7 +5,7 @@
 #include<stdio.h>
 #include <math.h>
 
-const size_t  SIZE = 1000; 
+const size_t  SIZE = 100000; 
 #define TIMES  10000
 
 uint64_t global=0;
@@ -32,14 +32,15 @@ static inline void movsq_copy(uint64_t* input,uint64_t* output, size_t size){
 }
 
 static inline void four_copy_ymm(uint64_t* input, uint64_t* output, size_t size) {
+    // exit(1);
     int loop_count = size / 4;  // Perform the division outside of the assembly
     __asm__ volatile (
         "1:\n"
         // "vmovdqa (%[input]), %%ymm0\n"
         // "vmovdqa %%ymm0, (%[output])\n"
         
-        "vmovdqu8 (%[input]), %%ymm0\n"
-        "vmovdqu8 %%ymm0, (%[output])\n"
+        "vmovdqu (%[input]), %%ymm0\n"
+        "vmovdqu %%ymm0, (%[output])\n"
         "add $32, %[input]\n"
         "add $32, %[output]\n"
         "sub $1, %[loop_count]\n"
@@ -58,10 +59,6 @@ same goes for uncomenting it
 */
 #define CHECK_FUNC(func) \
     output = malloc(SIZE*sizeof(uint64_t));\
-    // if (posix_memalign((void**)&output, 32, SIZE * sizeof(uint64_t)) != 0) { \
-    //     printf("Memory alignment failed\n"); \
-    //     return 1; \
-    // } \
     if(!output){printf("OOM\n"); return 1;}\
     func(input,output,SIZE);\
     assert(memcmp(input,output,SIZE* sizeof(uint64_t)   )==0);\
