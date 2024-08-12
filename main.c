@@ -33,8 +33,11 @@ static inline void four_copy_ymm(uint64_t* input, uint64_t* output, int size) {
     int loop_count = size / 4;  // Perform the division outside of the assembly
     __asm__ volatile (
         "1:\n"
-        "vmovdqa (%[input]), %%ymm0\n"
-        "vmovdqa %%ymm0, (%[output])\n"
+        // "vmovdqa (%[input]), %%ymm0\n"
+        // "vmovdqa %%ymm0, (%[output])\n"
+        
+        "vmovdqu8 (%[input]), %%ymm0\n"
+        "vmovdqu8 %%ymm0, (%[output])\n"
         "add $32, %[input]\n"
         "add $32, %[output]\n"
         "sub $1, %[loop_count]\n"
@@ -47,11 +50,11 @@ static inline void four_copy_ymm(uint64_t* input, uint64_t* output, int size) {
 
 
 #define CHECK_FUNC(func) \
-    // output = malloc(SIZE*sizeof(uint64_t));\
-    if (posix_memalign((void**)&output, 32, SIZE * sizeof(uint64_t)) != 0) { \
-        printf("Memory alignment failed\n"); \
-        return 1; \
-    } \
+    output = malloc(SIZE*sizeof(uint64_t));\
+    // if (posix_memalign((void**)&output, 32, SIZE * sizeof(uint64_t)) != 0) { \
+    //     printf("Memory alignment failed\n"); \
+    //     return 1; \
+    // } \
     if(!output){printf("OOM\n"); return 1;}\
     func(input,output,SIZE);\
     assert(memcmp(input,output,SIZE* sizeof(uint64_t)   )==0);\
