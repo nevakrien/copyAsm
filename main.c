@@ -5,7 +5,7 @@
 #include<stdio.h>
 #include <math.h>
 
-const size_t  SIZE = 100000; 
+size_t  SIZE = 20;//1000000;//1000000;//20;//1000;//100000; 
 #define TIMES  10000
 
 uint64_t global=0;
@@ -84,7 +84,7 @@ same goes for uncomenting it
     stddev = sqrt(stddev / (double)TIMES); \
     printf("Function: %s, Mean: %f, Stddev: %f\n", #func, mean, stddev);
 
-int main(void) {
+int main_bench(void) {
     uint64_t* input = malloc(SIZE * sizeof(uint64_t));
     if(!input) {
         printf("OOM\n");
@@ -108,7 +108,9 @@ int main(void) {
     CHECK_FUNC(four_copy_ymm)
     CHECK_FUNC(macro_move)
 
-    printf("pass\n\n" );
+    printf("pass\n" );
+
+    printf("size is %zu\n\n",SIZE);
 
     SET_TIME()
     TIME_FUNC(uint64_t_move,times)
@@ -118,6 +120,19 @@ int main(void) {
 
     free(input);
     printf("done\n" );
+    return 0;
+}
 
+int main(void){
+    SIZE=20;
+    if(main_bench()) return 1;
+    SIZE=1000;
+    if(main_bench()) return 1;
+    SIZE=10000;
+    if(main_bench()) return 1;
+    SIZE=100000; 
+    if(main_bench()) return 1;
+    SIZE=1000000; 
+    if(main_bench()) return 1;
     return 0;
 }
