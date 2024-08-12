@@ -17,6 +17,8 @@ static inline void uint64_t_move(uint64_t* input,uint64_t* output, int size){
     memcpy(output, input, size * sizeof(uint64_t));
 }   
 
+#define macro_move(INPUT,OUTPUT,MYSIZE) memcpy(OUTPUT, INPUT, MYSIZE * sizeof(uint64_t))
+
 static inline void movsq_copy(uint64_t* input,uint64_t* output, int size){
 	 __asm__ (
         "rep movsq"
@@ -28,22 +30,28 @@ static inline void movsq_copy(uint64_t* input,uint64_t* output, int size){
 }
 
 static inline void four_copy_ymm(uint64_t* input, uint64_t* output, int size) {
-    __asm__ (
+    int loop_count = size / 4;  // Perform the division outside of the assembly
+    __asm__ volatile (
         "1:\n"
         "vmovdqa (%[input]), %%ymm0\n"
         "vmovdqa %%ymm0, (%[output])\n"
         "add $32, %[input]\n"
         "add $32, %[output]\n"
-        "sub $1, %[size]\n"
+        "sub $1, %[loop_count]\n"
         "jnz 1b\n"
-        :
-        : [input] "r"(input), [output] "r"(output), [size] "r"(size/4)
+        : [input] "+r"(input), [output] "+r"(output), [loop_count] "+r"(loop_count)
+        : 
         : "memory", "ymm0"
     );
 }
 
+
 #define CHECK_FUNC(func) \
-    output = malloc(SIZE*sizeof(uint64_t));\
+    // output = malloc(SIZE*sizeof(uint64_t));\
+    if (posix_memalign((void**)&output, 32, SIZE * sizeof(uint64_t)) != 0) { \
+        printf("Memory alignment failed\n"); \
+        return 1; \
+    } \
     if(!output){printf("OOM\n"); return 1;}\
     func(input,output,SIZE);\
     assert(memcmp(input,output,SIZE* sizeof(uint64_t)   )==0);\
@@ -91,15 +99,18 @@ int main(void) {
     CHECK_FUNC(uint64_t_move)
     CHECK_FUNC(movsq_copy)
     CHECK_FUNC(four_copy_ymm)
+    CHECK_FUNC(macro_move)
+
     printf("pass\n\n" );
 
     SET_TIME()
     TIME_FUNC(uint64_t_move,times)
     TIME_FUNC(movsq_copy,times)
     TIME_FUNC(four_copy_ymm,times)
+    TIME_FUNC(macro_move,times)
 
     free(input);
     printf("done\n" );
-    
+
     return 0;
 }
